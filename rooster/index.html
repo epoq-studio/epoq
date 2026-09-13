@@ -222,7 +222,9 @@
     gap: 10px 12px;
   }
 
-  .bewerk > div { min-width: 0; }
+  .bewerk { align-items: end; }
+  .bewerk > div { min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+  .bewerk input, .bewerk select { min-height: 44px; }
   .bewerk .knoppen { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .bewerk .melding { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--attn); }
   .bewerk input, .bewerk select { background: var(--surface); }
@@ -362,8 +364,9 @@
   textarea { min-height: 84px; resize: vertical; }
   input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
 
-  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
-  .fields > div { min-width: 0; }
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; align-items: end; }
+  .fields > div { min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+  .fields input, .fields select { min-height: 44px; }
 
   .btn {
     margin-top: 12px;
