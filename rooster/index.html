@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#FCF1F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#191219" media="(prefers-color-scheme: dark)">
+<title>Rooster</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Asap:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper:      #FCF1F4;
+    --surface:    #FFFFFF;
+    --sunken:     #F5E8ED;
+    --ink:        #241C28;
+    --ink-soft:   #6B5F70;
+    --ink-faint:  #9A8EA0;
+    --line:       #E5D8DE;
+    --grid:       #F2E2E8;
+    --accent:     #7E2F55;
+    --mark:       #FBEBBE;
+    --late:       #9E5613;
+    --late-bg:    #FAEBD8;
+    --shadow:     0 1px 2px rgba(60, 30, 45, .06), 0 4px 12px rgba(60, 30, 45, .05);
+    --radius:     7px;
+
+    /* Het moment zelf vraagt aandacht; voorbereiden is rustig. */
+    --attn:      #A8452F;
+    --attn-bg:   #FBEAE5;
+    --attn-line: #E7B7A9;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #191219;
+      --surface:    #221A21;
+      --sunken:     #140F14;
+      --ink:        #EFE7EC;
+      --ink-soft:   #AA9BA6;
+      --ink-faint:  #7B6E78;
+      --line:       #362A32;
+      --grid:       #2A2028;
+      --accent:     #E3A6C3;
+      --mark:       #3B3320;
+      --late:       #DFA25E;
+      --late-bg:    #2E2415;
+      --shadow:     0 1px 2px rgba(0, 0, 0, .35), 0 4px 14px rgba(0, 0, 0, .3);
+
+      --attn:      #EC9285;
+      --attn-bg:   #34201C;
+      --attn-line: #5E342D;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #191219;
+    --surface:    #221A21;
+    --sunken:     #140F14;
+    --ink:        #EFE7EC;
+    --ink-soft:   #AA9BA6;
+    --ink-faint:  #7B6E78;
+    --line:       #362A32;
+    --grid:       #2A2028;
+    --accent:     #E3A6C3;
+    --mark:       #3B3320;
+    --late:       #DFA25E;
+    --late-bg:    #2E2415;
+    --shadow:     0 1px 2px rgba(0, 0, 0, .35), 0 4px 14px rgba(0, 0, 0, .3);
+
+    --attn:      #EC9285;
+    --attn-bg:   #34201C;
+    --attn-line: #5E342D;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Asap", "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 26px 18px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  h1, h2, .daylabel, .btn, .sub, .legend {
+    font-family: "Archivo", "Segoe UI", system-ui, sans-serif;
+  }
+
+  h1 { font-size: 27px; font-weight: 700; letter-spacing: -.015em; margin: 0; text-wrap: balance; }
+
+  h2 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--ink-soft);
+    margin: 0 0 10px;
+  }
+
+  .lede { margin: 6px 0 0; color: var(--ink-soft); max-width: 60ch; }
+
+  .notice.fout { border-left-color: var(--attn); background: var(--attn-bg); color: var(--attn); }
+
+  .notice {
+    margin-top: 14px;
+    padding: 9px 12px;
+    border-left: 3px solid var(--late);
+    background: var(--late-bg);
+    color: var(--late);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    font-size: 13.5px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 15px 16px;
+  }
+
+  /* ---------- de dag ---------- */
+
+  .stack { display: flex; flex-direction: column; gap: 7px; }
+
+  .dagkop { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dagkop h2 { margin: 0; flex: 1; }
+
+  .nav {
+    display: none;
+    font: 600 15px/1 "Archivo", system-ui, sans-serif;
+    color: var(--ink-soft);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    width: 34px; height: 30px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav.terug { width: auto; padding: 0 10px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; }
+  .nav:disabled { opacity: .35; cursor: default; }
+  .nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .sub {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--late);
+    margin: 14px 0 7px;
+  }
+
+  .empty { color: var(--ink-soft); margin: 0; }
+  .empty b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- komt eraan ---------- */
+
+  .drow {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 3px 9px;
+    align-items: baseline;
+    padding: 11px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .drow:first-child { padding-top: 0; border-top: 0; }
+  .drow .em { align-self: center; }
+  .drow .vak { font-weight: 600; }
+  .drow .act { grid-column: 2; font-size: 13px; color: var(--ink-soft); }
+  .drow .when {
+    grid-column: 3; grid-row: 1 / span 2;
+    text-align: right; font-size: 13.5px; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .drow .when b { display: block; color: var(--ink); font-weight: 600; }
+  .drow .bar { grid-column: 2 / -1; margin-top: 5px; height: 4px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+  .drow .bar i { display: block; height: 100%; background: var(--ink-soft); }
+  .drow .cnt { grid-column: 2 / -1; font-size: 12.5px; color: var(--ink-faint); }
+
+  /* ---------- kalender ---------- */
+
+  .cal-head, .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .cal-head { margin-bottom: 6px; }
+
+  .daylabel {
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .09em; color: var(--ink-faint); text-align: center;
+  }
+
+  .cell {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    min-height: 104px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 15px 15px;
+    background-position: -1px -1px;
+  }
+
+  /* Een dag die voorbij is: het vakje blijft dekkend en alleen wat erin
+     staat vervaagt. */
+  .cell.past { background-color: var(--sunken); }
+  .cell.past .chip, .cell.past .dnum { opacity: .5; }
+  .cell.blocked { background-color: var(--sunken); }
+  .cell.today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+
+  .cell .dnum {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 12px; font-weight: 600; color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 4px;
+  }
+
+  .cell.today .dnum { color: var(--accent); }
+  .cell .dnum em { font-style: normal; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+  .cell .tag { font-size: 10.5px; color: var(--ink-faint); letter-spacing: .04em; }
+
+  /* ---------- blokjes ---------- */
+
+  .em {
+    flex: 0 0 auto;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    font-style: normal;
+    font-size: 12.5px;
+    line-height: 1.2;
+  }
+
+  .chip {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+    font: 500 12.5px/1.3 "Asap", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 5px 7px;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .chip .txt { min-width: 0; overflow-wrap: break-word; }
+  .chip .txt b { display: block; font-weight: 600; hyphens: auto; }
+  .chip .txt i { display: block; font-style: normal; font-size: 11.5px; color: var(--ink-soft); }
+  .chip:hover { border-color: var(--ink-faint); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* het moment zelf: de toets, het inleveren, de presentatie */
+  .chip.event {
+    background: var(--attn-bg);
+    border-color: var(--attn-line);
+    cursor: default;
+  }
+  .chip.event .txt b { color: var(--attn); }
+  .chip.event .txt i { color: var(--attn); }
+
+  .chip.done { background: var(--sunken); border-color: var(--line); }
+  .chip.done .txt b, .chip.done .txt i { color: var(--ink-faint); text-decoration: line-through; }
+  .chip.done .em { opacity: .4; filter: grayscale(1); }
+  .chip.late { border-style: dashed; border-left-style: solid; background: var(--late-bg); }
+  .chip.raw { background: var(--mark); border-left-color: var(--late); cursor: default; }
+
+  .chip.big { font-size: 14.5px; padding: 9px 11px; border-left-width: 4px; }
+  .chip.big .em { font-size: 15px; }
+  .chip.big .txt i { font-size: 12.5px; }
+
+  /* ---------- legenda ---------- */
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 6px 16px;
+    font-size: 12px; color: var(--ink-soft); letter-spacing: .01em;
+    padding-top: 12px;
+  }
+
+  .legend span { display: flex; align-items: center; gap: 5px; }
+
+  /* ---------- invoer ---------- */
+
+  .panels { display: flex; flex-direction: column; gap: 14px; }
+  .panel p { margin: 0 0 10px; font-size: 13.5px; color: var(--ink-soft); }
+
+  label {
+    display: block; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px;
+  }
+
+  textarea, input, select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    font: 400 15px/1.45 "Asap", system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent); }
+
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  .fields > div { min-width: 0; }
+
+  .btn {
+    margin-top: 12px;
+    font-size: 14px; font-weight: 600;
+    color: var(--surface); background: var(--accent);
+    border: 1px solid var(--accent); border-radius: 6px;
+    padding: 8px 15px; cursor: pointer;
+  }
+
+  .btn:hover { filter: brightness(1.08); }
+  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .ok { margin-top: 9px; font-size: 13px; color: var(--ink-soft); }
+
+  footer { font-size: 12.5px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 14px; }
+  footer button { font: inherit; color: var(--ink-faint); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 18px 13px 54px; gap: 20px; }
+    h1 { font-size: 23px; }
+
+    .cal-head, .cal { gap: 3px; }
+    .daylabel { font-size: 9.5px; letter-spacing: .04em; }
+    .cell { min-height: 46px; padding: 3px; gap: 2px; background-image: none; }
+    .cell .dnum { font-size: 11px; }
+    .cell .dnum em, .cell .tag { display: none; }
+    /* In het overzicht past geen tekst, maar de emoji wel: daaraan zie je
+       wat er die dag speelt. De tekst staat in de dagenlijst eronder. */
+    .cell { flex-flow: row wrap; align-items: flex-start; gap: 2px; }
+    .cell .dnum { flex-basis: 100%; }
+    .cell .chip {
+      width: auto; padding: 1px 2px; border: 0;
+      border-radius: 4px; background: transparent;
+    }
+    .cell .chip .txt { display: none; }
+    .cell .chip .em { font-size: 13.5px; }
+    .cell .chip.event { background: var(--attn-bg); }
+    .cell .chip.done .em { opacity: .35; }
+    .cell .chip.raw { background: var(--mark); }
+
+    /* Op de telefoon alleen de dag zelf — een snelle blik. Het raster van
+       vijf weken is voor de laptop en de iPad. */
+    #rasterSec { display: none; }
+    .nav { display: inline-flex; }
+    .drow .when { grid-column: 1 / -1; grid-row: auto; text-align: left; }
+    .drow .when b { display: inline; margin-right: 6px; }
+    .drow .act, .drow .bar, .drow .cnt { grid-column: 1 / -1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" lang="nl">
+
+  <header>
+    <h1 id="kop">Rooster</h1>
+    <p class="lede">Wanneer je waarmee bezig moet zijn om de datum te halen. Wát je moet leren staat in Somtoday — hier staat alleen de verdeling.</p>
+    <p class="notice" id="verbinding" hidden></p>
+  </header>
+
+  <section class="panel" id="dagPanel">
+    <div class="dagkop">
+      <button class="nav" id="vorigeDag" type="button" aria-label="dag terug">&lsaquo;</button>
+      <h2 id="todayTitle">Vandaag</h2>
+      <button class="nav" id="volgendeDag" type="button" aria-label="dag verder">&rsaquo;</button>
+      <button class="nav terug" id="naarVandaag" type="button" hidden>vandaag</button>
+    </div>
+    <div class="stack" id="todayChips"></div>
+    <div id="arrears" hidden>
+      <div class="sub">Van eerder, nog niet gedaan</div>
+      <div class="stack" id="arrearsChips"></div>
+    </div>
+  </section>
+
+  <section id="rasterSec">
+    <h2 id="calTitle">Vijf weken</h2>
+    <div class="cal-head" id="calHead"></div>
+    <div class="cal" id="cal"></div>
+    <div class="legend">
+      <span><i class="em">⚠️</i> de toets, het inleveren of de presentatie zelf</span>
+      <span><i class="em">📖</i> toets leren</span>
+      <span><i class="em">🛠️</i> werkstuk maken</span>
+      <span><i class="em">📚</i> presentatie voorbereiden</span>
+    </div>
+  </section>
+
+  <section class="panel" id="laterSec" hidden>
+    <h2>Komt eraan</h2>
+    <div id="later"></div>
+  </section>
+
+  <div class="panels">
+    <section class="panel">
+      <h2>Iets inzetten</h2>
+      <p>Vier keuzes. Zo kan er niets verkeerd in komen te staan.</p>
+      <div class="fields">
+        <div>
+          <label for="fVak">Vak</label>
+          <select id="fVak"><option value="">kies een vak</option></select>
+        </div>
+        <div>
+          <label for="fSoort">Wat is het</label>
+          <select id="fSoort">
+            <option value="">kies</option>
+            <option value="toets">toets</option>
+            <option value="werkstuk">werkstuk of verslag</option>
+            <option value="presentatie">presentatie</option>
+            <option value="anders">iets anders</option>
+          </select>
+        </div>
+        <div>
+          <label for="fDatum">Wanneer moet het klaar zijn</label>
+          <input id="fDatum" type="date">
+        </div>
+        <div>
+          <label for="fAantal">Hoe vaak eraan werken</label>
+          <input id="fAantal" type="number" min="1" max="20" inputmode="numeric" placeholder="4">
+        </div>
+      </div>
+      <button class="btn" id="addBtn">Inzetten</button>
+      <div class="ok" id="addOk" hidden></div>
+    </section>
+
+    <section class="panel">
+      <h2>Of typ het snel op</h2>
+      <p>Voor als je haast hebt of iets uit Somtoday plakt: <em>20 december toets wiskunde, 8 keer leren</em>. Eén regel per ding. De pagina leest het en zegt wat ze ervan gemaakt heeft. Snapt ze een regel niet, dan blijft die als 📥 op vandaag staan.</p>
+      <label for="dump">Uit Somtoday of uit je hoofd</label>
+      <textarea id="dump" placeholder="20 december toets wiskunde, 8 keer leren&#10;presentatie biologie 1 oktober&#10;boekverslag Nederlands inleveren 9 okt"></textarea>
+      <button class="btn" id="dumpBtn">Lezen en inzetten</button>
+      <div class="ok" id="dumpOk" hidden></div>
+    </section>
+  </div>
+
+  <footer>
+    <span id="stamp"></span> · <button id="ververs">opnieuw ophalen</button>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DAYS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
+  var DAYS_LONG = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"];
+  var MONTHS = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+
+  // Dinsdag: volle schooldag plus dansen. Zaterdag: vrij, dat is de inhaaldag.
+  var BLOCKED = { 1: "dansen", 5: "inhaaldag" };
+  var MAX_PER_DAY = 2;
+
+  /* ---------- de zes activiteiten ----------
+     Drie soorten werk, elk met een voorbereiding die vaak terugkomt en één
+     moment waarop het gebeurt. De kleur hoort bij de activiteit; het vak is
+     de tekst. */
+
+  var SOORT = {
+    toets: {
+      prep: "toets leren",             ep: "\uD83D\uDCD6",
+      event: "toets maken",            ee: "\u26A0\uFE0F",
+      lead: 21, pat: [8, 5, 3, 1]
+    },
+    werkstuk: {
+      prep: "werkstuk maken",          ep: "\uD83D\uDEE0\uFE0F",
+      event: "werkstuk inleveren",     ee: "\u26A0\uFE0F",
+      lead: 28, pat: [12, 9, 6, 3]
+    },
+    presentatie: {
+      prep: "presentatie voorbereiden", ep: "\uD83D\uDCDA",
+      event: "presentatie doen",        ee: "\u26A0\uFE0F",
+      lead: 21, pat: [10, 7, 4, 2]
+    },
+    anders: {
+      prep: "eraan werken",            ep: "\uD83D\uDCCC",
+      event: "klaar hebben",           ee: "\u26A0\uFE0F",
+      lead: 14, pat: [5, 2]
+    }
+  };
+
+  function soort(s) { return SOORT[s] || SOORT.anders; }
+
+  /* ---------- haar vakken, zoals ze in Somtoday staan ---------- */
+
+  var VAKKEN = [
+    { naam: "aardrijkskunde",         alias: ["ak", "aard"] },
+    { naam: "biologie",               alias: ["bi", "bio"] },
+    { naam: "drama",                  alias: ["dr"] },
+    { naam: "Duits",                  alias: ["du", "dui", "duitse taal"], som: "Duitse taal" },
+    { naam: "Engels",                 alias: ["eng", "engelse taal"], los: ["en"], som: "Engelse taal" },
+    { naam: "Frans",                  alias: ["fa", "fr", "franse taal"], som: "Franse taal" },
+    { naam: "geschiedenis",           alias: ["gs", "ges", "gesch"] },
+    { naam: "handvaardigheid",        alias: ["hv", "handv"] },
+    { naam: "lichamelijke opvoeding", alias: ["lo", "gym"] },
+    { naam: "mentoraat",              alias: ["ment"], los: ["me"] },
+    { naam: "nask",                   alias: ["nat", "sk", "natuur/scheikunde", "natuur-scheikunde"], los: ["na"], som: "natuur/scheikunde" },
+    { naam: "Nederlands",             alias: ["ne", "ned", "nederlandse taal"], som: "Nederlandse taal" },
+    { naam: "tekenen",                alias: ["tek"], los: ["te"] },
+    { naam: "wereldburgerschap",      alias: ["wb", "wereld"] },
+    { naam: "wiskunde",               alias: ["wi", "wis", "wisk"] }
+  ];
+
+  var VAK_INDEX = (function () {
+    var m = {};
+    VAKKEN.forEach(function (v) {
+      m[v.naam.toLowerCase()] = v;
+      if (v.som) m[v.som.toLowerCase()] = v;
+      v.alias.forEach(function (a) { m[a] = v; });
+      (v.los || []).forEach(function (a) { m[a] = v; });
+    });
+    return m;
+  })();
+
+  // "wi" wordt "wiskunde", "Nederlandse taal" wordt "Nederlands".
+  function vakNaam(v) {
+    var n = (v || "").toLowerCase().trim();
+    if (VAK_INDEX[n]) return VAK_INDEX[n].naam;
+    return (v || "").trim();
+  }
+
+  /* ---------- de dump lezen ----------
+     Een regel als "20 december toets wiskunde, 8 keer leren" wordt hier
+     uit elkaar gehaald. Lukt dat niet helemaal, dan blijft de regel staan
+     als 📥 met de reden erbij — dan is er iets te verwerken, anders niet. */
+
+  var MAANDEN = {
+    januari: 1, jan: 1, februari: 2, feb: 2, maart: 3, mrt: 3, mar: 3,
+    april: 4, apr: 4, mei: 5, juni: 6, jun: 6, juli: 7, jul: 7,
+    augustus: 8, aug: 8, september: 9, sept: 9, sep: 9,
+    oktober: 10, okt: 10, november: 11, nov: 11, december: 12, dec: 12
+  };
+
+  /* Hoe een woord gevonden mag worden:
+     "vrij"  — ook midden in een woord, zodat "wiskundetoets" en "toetsje" meetellen
+     "start" — aan het begin van een woord, achtervoegsel mag ("opdrachten"),
+               zodat "kleren" niet als "leren" telt
+     "woord" — alleen als los woord; voor afkortingen die ook gewone woorden zijn */
+
+  var SOORT_WOORDEN = [
+    { s: "presentatie", w: [["presentatie", "vrij"], ["spreekbeurt", "vrij"], ["presenteren", "start"], ["pitch", "start"]] },
+    { s: "werkstuk",    w: [["werkstuk", "vrij"], ["boekverslag", "vrij"], ["verslag", "vrij"], ["opdracht", "start"],
+                            ["inlever", "start"], ["essay", "start"], ["po", "woord"]] },
+    { s: "toets",       w: [["proefwerk", "vrij"], ["toets", "vrij"], ["repetitie", "vrij"], ["overhoring", "vrij"],
+                            ["tentamen", "vrij"], ["leren", "start"], ["so", "woord"], ["sos", "woord"]] }
+  ];
+
+  var GETALLEN = {
+    een: 1, "\u00e9\u00e9n": 1, twee: 2, drie: 3, vier: 4, vijf: 5, zes: 6,
+    zeven: 7, acht: 8, negen: 9, tien: 10, elf: 11, twaalf: 12
+  };
+
+  function esc_re(w) { return w.replace(/[.*+?^${}()|[\]\\\/]/g, "\\$&"); }
+
+  function woordIn(tekst, w, hoe) {
+    if (hoe === "vrij") return tekst.indexOf(w) >= 0;
+    if (hoe === "start") return new RegExp("(^|[^a-z0-9])" + esc_re(w)).test(tekst);
+    return new RegExp("(^|[^a-z0-9])" + esc_re(w) + "([^a-z0-9]|$)").test(tekst);
+  }
+
+  function maakDatum(d, mnd, jaarTekst) {
+    var t = today();
+    var jaar = jaarTekst ? (+jaarTekst < 100 ? 2000 + +jaarTekst : +jaarTekst) : t.getFullYear();
+    var dt = new Date(jaar, mnd - 1, d);
+    if (dt.getDate() !== d || dt.getMonth() !== mnd - 1) return null;
+    if (!jaarTekst && key(dt) < key(t)) dt = new Date(jaar + 1, mnd - 1, d);
+    return dt;
+  }
+
+  function vindDatum(tekst) {
+    var m = tekst.match(/\b(\d{1,2})\s*(?:e|ste|de)?\s+([a-z]{3,9})\b/);
+    if (m && MAANDEN[m[2]]) return maakDatum(+m[1], MAANDEN[m[2]], null);
+    m = tekst.match(/\b(\d{1,2})\s*[-\/.]\s*(\d{1,2})(?:\s*[-\/.]\s*(\d{2,4}))?\b/);
+    if (m) return maakDatum(+m[1], +m[2], m[3]);
+    return null;
+  }
+
+  function vindVak(tekst) {
+    var beste = null, lengte = 0;
+    VAKKEN.forEach(function (v) {
+      var kandidaten = [v.naam.toLowerCase()].concat(v.som ? [v.som.toLowerCase()] : [], v.alias);
+      kandidaten.forEach(function (k) {
+        // Lange namen mogen ook aan een ander woord vastzitten ("wiskundetoets");
+        // korte afkortingen alleen als los woord ("ak", "gs").
+        var hoe = k.length >= 5 ? "vrij" : "woord";
+        if (k.length > lengte && woordIn(tekst, k, hoe)) { beste = v; lengte = k.length; }
+      });
+    });
+    return beste ? beste.naam : null;
+  }
+
+  function vindSoort(tekst) {
+    for (var i = 0; i < SOORT_WOORDEN.length; i++) {
+      for (var j = 0; j < SOORT_WOORDEN[i].w.length; j++) {
+        var p = SOORT_WOORDEN[i].w[j];
+        if (woordIn(tekst, p[0], p[1])) return SOORT_WOORDEN[i].s;
+      }
+    }
+    return null;
+  }
+
+  function vindAantal(tekst) {
+    var m = tekst.match(/\b(\d{1,2})\s*(?:x|keer|maal)\b/);
+    if (m) return +m[1];
+    m = tekst.match(/(^|[^a-z])([a-z\u00e9]{3,6})\s*(?:x|keer|maal)\b/);
+    if (m && GETALLEN[m[2]]) return GETALLEN[m[2]];
+    return 0;
+  }
+
+  function leesRegel(regel) {
+    var tekst = regel.toLowerCase().replace(/\u00a0/g, " ");
+    var vak = vindVak(tekst);
+    var datum = vindDatum(tekst);
+    var aantal = vindAantal(tekst);
+
+    var mist = [];
+    if (!vak) mist.push("welk vak");
+    if (!datum) mist.push("welke datum");
+    if (mist.length) return { fout: mist.join(" en ") + " ontbreekt" };
+    if (key(datum) <= key(today())) return { fout: "die datum is vandaag of al geweest" };
+
+    return { vak: vak, soort: vindSoort(tekst) || "anders", deadline: key(datum), count: aantal };
+  }
+
+  /* ---------- datums ---------- */
+
+  function today() {
+    var n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+  function parse(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function key(d) {
+    var m = d.getMonth() + 1, dd = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (dd < 10 ? "0" : "") + dd;
+  }
+  function add(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function dow(d) { return (d.getDay() + 6) % 7; }
+  function monday(d) { return add(d, -dow(d)); }
+  function diff(a, b) { return Math.round((parse(b) - parse(a)) / 86400000); }
+  function nice(d) { return d.getDate() + " " + MONTHS[d.getMonth()]; }
+  function plannable(d) { return !(dow(d) in BLOCKED); }
+
+  // "vandaag", "morgen", of gewoon de datum
+  function wanneer(datum, vandaagKey) {
+    var v = diff(vandaagKey, datum);
+    if (v === 0) return "vandaag";
+    if (v === 1) return "morgen";
+    if (v < 0) return nice(parse(datum)) + " (geweest)";
+    return nice(parse(datum));
+  }
+
+  /* ---------- terugplannen ---------- */
+
+  function openDays(dl, lead, floor) {
+    var out = [];
+    for (var b = 1; b <= lead + 45; b++) {
+      var d = add(dl, -b);
+      if (key(d) < key(floor)) break;
+      if (plannable(d)) out.push(d);
+      if (b >= lead && out.length) break;
+    }
+    return out;
+  }
+
+  function loadMap(items) {
+    var m = {};
+    (items || []).forEach(function (it) {
+      (it.sessions || []).forEach(function (s) { m[s.date] = (m[s.date] || 0) + 1; });
+    });
+    return m;
+  }
+
+  function planSessions(item, load) {
+    var cfg = soort(item.soort);
+    var dl = parse(item.deadline);
+    var floor = today();
+    var n = item.count || cfg.pat.length;
+    var i;
+
+    var open = openDays(dl, Math.max(cfg.lead, n * 2), floor);
+    if (!open.length) open = [add(dl, -1)];
+    var win = openDays(dl, cfg.lead, floor);
+    if (!win.length) win = open.slice(0, 1);
+
+    var perDay = load || {};
+    function place(day) {
+      var idx = 0, q;
+      for (q = 0; q < open.length; q++) {
+        if (key(open[q]) === key(day)) { idx = q; break; }
+      }
+      var guard = 0;
+      while (perDay[key(open[idx])] >= MAX_PER_DAY && guard++ < open.length) {
+        idx = (idx + 1) % open.length;
+      }
+      var d = open[idx];
+      perDay[key(d)] = (perDay[key(d)] || 0) + 1;
+      return d;
+    }
+
+    var slots = [];
+    if (item.count) {
+      // Gelijkmatig over het hele aanloopvenster.
+      var use = win.length >= n ? win : open;
+      for (i = 0; i < n; i++) {
+        var ix = n === 1 ? 0 : Math.round(i * (use.length - 1) / (n - 1));
+        slots.push(place(use[Math.min(ix, use.length - 1)]));
+      }
+    } else {
+      // Vaste afstanden; een geblokkeerde of verstreken dag schuift naar de
+      // eerstvolgende bruikbare dag ervoor.
+      for (i = 0; i < cfg.pat.length; i++) {
+        var want = add(dl, -cfg.pat[i]);
+        var pick = null;
+        for (var j = 0; j < open.length; j++) {
+          if (key(open[j]) <= key(want)) { pick = open[j]; break; }
+        }
+        if (!pick) pick = open[Math.min(i, open.length - 1)];
+        slots.push(place(pick));
+      }
+    }
+
+    slots.sort(function (a, b) { return a - b; });
+    var out = [];
+    for (i = 0; i < n; i++) {
+      out.push({
+        id: item.id + "-s" + i,
+        date: key(slots[i] || slots[slots.length - 1]),
+        nr: i + 1,
+        done: false
+      });
+    }
+    return out;
+  }
+
+  /* ---------- opslag ----------
+     Het schema staat niet in deze pagina en niet in de browser, maar bij een
+     klein programmaatje van Cloudflare. Elk apparaat haalt hetzelfde exemplaar
+     op en schrijft ernaartoe. Alleen dit stuk weet daarvan. */
+
+  var API = "https://rooster.info-epoq.workers.dev";
+
+  var state = { items: [], raw: [] };
+  var geladen = false;          // pas opslaan als we weten wat er stond
+  var bezig = false, nogmaals = false;
+
+  // De naam staat in de gegevens, niet in dit bestand: dit bestand komt in een
+  // publieke repo te staan en hoort niemand te noemen.
+  function zetKop() {
+    el("kop").textContent = state.naam ? state.naam + "'s schema" : "Rooster";
+  }
+
+  function melding(tekst, soort) {
+    var b = el("verbinding");
+    if (!tekst) { b.hidden = true; return; }
+    b.hidden = false;
+    b.textContent = tekst;
+    b.className = "notice" + (soort === "fout" ? " fout" : "");
+  }
+
+  function laden(klaar) {
+    fetch(API, { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (d) {
+        state = (d && d.items) ? d : { items: [], raw: [] };
+        if (!state.raw) state.raw = [];
+        geladen = true;
+        melding(null);
+        klaar(true);
+      })
+      .catch(function () {
+        melding("Het schema is even niet op te halen. Ververs de pagina — wat je nu aanpast wordt niet bewaard.", "fout");
+        klaar(false);
+      });
+  }
+
+  function save() {
+    if (!geladen) return;               // nooit een leeg schema over het echte heen
+    if (bezig) { nogmaals = true; return; }
+    bezig = true;
+    fetch(API, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state)
+    })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); melding(null); })
+      .catch(function () { melding("Niet opgeslagen — geen verbinding.", "fout"); })
+      .then(function () {
+        bezig = false;
+        if (nogmaals) { nogmaals = false; save(); }
+      });
+  }
+
+  // Welke dag het dagpaneel toont. Op de telefoon stapt ze hiermee door de
+  // dagen; op de laptop staat hij altijd op vandaag en zijn de pijltjes weg.
+  var dag = key(today());
+
+  /* ---------- opbouwen ---------- */
+
+  function el(id) { return document.getElementById(id); }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  function byDay() {
+    var map = {};
+    state.items.forEach(function (it) {
+      it.sessions.forEach(function (s) {
+        (map[s.date] = map[s.date] || []).push({ item: it, s: s });
+      });
+      (map[it.deadline] = map[it.deadline] || []).push({ item: it, event: true });
+    });
+    state.raw.forEach(function (r) {
+      (map[r.date] = map[r.date] || []).push({ raw: r });
+    });
+    return map;
+  }
+
+  function chip(entry, ctx) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+
+    if (entry.raw) {
+      b.className += " raw";
+      b.innerHTML = '<i class="em">\uD83D\uDCE5</i><span class="txt"><b>' +
+        esc(entry.raw.text.split("\n")[0].slice(0, 40)) + '</b><i>' +
+        esc(entry.raw.reden || "nog te verwerken") + '</i></span>';
+      b.title = entry.raw.text + " — klik om te verbeteren";
+      b.addEventListener("click", function () {
+        // terug in het invulveld, zodat ze kan aanvullen wat ontbrak
+        var ta = el("dump");
+        ta.value = (ta.value ? ta.value.replace(/\s+$/, "") + "\n" : "") + entry.raw.text;
+        state.raw = state.raw.filter(function (r) { return r.id !== entry.raw.id; });
+        save();
+        render();
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+        ta.scrollIntoView({ block: "center" });
+      });
+      return b;
+    }
+
+    var it = entry.item;
+    var cfg = soort(it.soort);
+
+    if (entry.event) {
+      b.className += " event";
+      b.innerHTML = '<i class="em">' + cfg.ee + '</i><span class="txt"><b>' + esc(it.vak) + '</b><i>' + cfg.event + '</i></span>';
+      b.setAttribute("aria-disabled", "true");
+      b.title = it.vak + " — " + cfg.event;
+      return b;
+    }
+
+    var n = it.sessions.length;
+    var late = !entry.s.done && diff(entry.s.date, key(today())) > 0;
+    if (entry.s.done) b.className += " done";
+    else if (late) b.className += " late";
+
+    var extra = "";
+    if (ctx === "groot") extra = " · " + entry.s.nr + " van " + n;
+    if (ctx === "arrears") extra = " · stond op " + nice(parse(entry.s.date));
+
+    b.innerHTML = '<i class="em">' + cfg.ep + '</i><span class="txt"><b>' + esc(it.vak) + '</b><i>' +
+      cfg.prep + extra + '</i></span>';
+    b.setAttribute("aria-pressed", entry.s.done ? "true" : "false");
+    b.title = it.vak + " — " + cfg.prep + " (" + entry.s.nr + " van " + n + ")";
+    b.addEventListener("click", function () {
+      entry.s.done = !entry.s.done;
+      save();
+      render();
+    });
+    return b;
+  }
+
+  function render() {
+    var t = today();
+    var tk = key(t);
+    var start = monday(t);
+    var map = byDay();
+
+    /* het dagpaneel */
+    var d0 = parse(dag);
+    var isVandaag = dag === tk;
+    el("todayTitle").textContent = (isVandaag ? "Vandaag · " : "") +
+      DAYS_LONG[dow(d0)] + " " + nice(d0);
+    el("naarVandaag").hidden = isVandaag;
+    el("vorigeDag").disabled = diff(key(start), dag) <= 0;
+    el("volgendeDag").disabled = diff(dag, key(add(start, 90))) <= 0;
+
+    var tc = el("todayChips");
+    tc.textContent = "";
+
+    (map[dag] || []).filter(function (e) { return e.event; }).forEach(function (e) {
+      var c = chip(e);
+      c.className += " big";
+      tc.appendChild(c);
+    });
+
+    var vandaag = (map[dag] || []).filter(function (e) { return !e.event; });
+    if (!vandaag.length) {
+      var p = document.createElement("p");
+      p.className = "empty";
+      p.innerHTML = dow(d0) === 5
+        ? "<b>Zaterdag.</b> Vrij gehouden — of je haalt iets in dat is blijven liggen."
+        : dow(d0) === 1
+          ? "<b>Dinsdag.</b> Volle dag, dus hier niets ingezet. Alleen gewoon huiswerk."
+          : "<b>Niets ingezet" + (isVandaag ? " vandaag" : " deze dag") + ".</b> " +
+            (isVandaag ? "Vooruit werken mag altijd — kijk met &rsaquo; wat er aankomt." : "");
+      tc.appendChild(p);
+    } else {
+      vandaag.forEach(function (e) {
+        var c = chip(e, "groot");
+        c.className += " big";
+        tc.appendChild(c);
+      });
+      if (!vandaag.filter(function (e) { return e.s && !e.s.done; }).length) {
+        var klaar = document.createElement("p");
+        klaar.className = "empty";
+        klaar.style.marginTop = "10px";
+        klaar.innerHTML = "<b>" + (isVandaag ? "Vandaag" : "Deze dag") + " is klaar.</b>";
+        tc.appendChild(klaar);
+      }
+    }
+
+    /* achterstand */
+    var arr = [];
+    state.items.forEach(function (it) {
+      it.sessions.forEach(function (s) {
+        if (!s.done && diff(s.date, tk) > 0) arr.push({ item: it, s: s });
+      });
+    });
+    el("arrears").hidden = !arr.length || !isVandaag;
+    var ac = el("arrearsChips");
+    ac.textContent = "";
+    arr.sort(function (a, b) { return a.s.date < b.s.date ? -1 : 1; }).forEach(function (e) {
+      var c = chip(e, "arrears");
+      c.className += " big";
+      ac.appendChild(c);
+    });
+
+    /* koppen van het raster */
+    var head = el("calHead");
+    head.textContent = "";
+    DAYS.forEach(function (d) {
+      var s = document.createElement("div");
+      s.className = "daylabel";
+      s.textContent = d;
+      head.appendChild(s);
+    });
+
+    /* raster en dagenlijst */
+    var cal = el("cal");
+    cal.textContent = "";
+
+    for (var i = 0; i < 35; i++) {
+      var d = add(start, i);
+      var k = key(d);
+      var entries = (map[k] || []).slice().sort(function (a, b) {
+        return (b.event ? 1 : 0) - (a.event ? 1 : 0);
+      });
+      var isToday = k === tk;
+      var past = k < tk;
+      var blk = dow(d) in BLOCKED;
+
+      var cell = document.createElement("div");
+      cell.className = "cell" + (isToday ? " today" : "") + (past ? " past" : "") + (blk ? " blocked" : "");
+      var h = document.createElement("div");
+      h.className = "dnum";
+      h.innerHTML = "<span>" + d.getDate() + (d.getDate() === 1 || i === 0 ? " <em>" + MONTHS[d.getMonth()] + "</em>" : "") + "</span>" +
+        (blk ? '<span class="tag">' + BLOCKED[dow(d)] + "</span>" : "");
+      cell.appendChild(h);
+      entries.forEach(function (e) { cell.appendChild(chip(e)); });
+      cell.addEventListener("click", function (ev) {
+        if (ev.target.closest(".chip")) return;   // een blokje afvinken blijft afvinken
+        dag = k;
+        render();
+        el("dagPanel").scrollIntoView({ block: "start", behavior: "smooth" });
+      });
+      cal.appendChild(cell);
+
+    }
+
+    el("calTitle").textContent = "Van " + nice(start) + " tot " + nice(add(start, 34));
+
+    /* komt eraan: alles wat na vandaag nog moet gebeuren */
+    var later = state.items.filter(function (it) { return diff(tk, it.deadline) > 0; });
+    el("laterSec").hidden = !later.length;
+    var lc = el("later");
+    lc.textContent = "";
+    later.sort(function (a, b) { return a.deadline < b.deadline ? -1 : 1; }).forEach(function (it) {
+      var cfg = soort(it.soort);
+      var n = it.sessions.length;
+      var done = it.sessions.filter(function (s) { return s.done; }).length;
+      var dd = diff(tk, it.deadline);
+      var r = document.createElement("div");
+      r.className = "drow";
+      r.innerHTML =
+        '<i class="em">' + cfg.ee + '</i>' +
+        '<span class="vak">' + esc(it.vak) + '</span>' +
+        '<span class="when"><b>' + (dd === 1 ? "morgen" : "over " + dd + " dagen") + "</b>" +
+          DAYS_LONG[dow(parse(it.deadline))] + " " + nice(parse(it.deadline)) + '</span>' +
+        '<span class="act">' + cfg.event + '</span>' +
+        '<span class="bar"><i style="width:' + (n ? Math.round(done / n * 100) : 0) + '%"></i></span>' +
+        '<span class="cnt">' + done + " van de " + n + " keer " +
+          (it.soort === "toets" ? "geleerd" : "gedaan") +
+          (done < n ? " · volgende keer " + wanneer(it.sessions.filter(function (x) { return !x.done; })[0].date, tk) : "") +
+        "</span>";
+      lc.appendChild(r);
+    });
+
+    zetKop();
+    el("stamp").textContent = "Bijgewerkt " + DAYS_LONG[dow(t)] + " " + nice(t);
+  }
+
+  /* ---------- invoer ---------- */
+
+  (function vulLijst() {
+    var sel = el("fVak");
+    VAKKEN.slice().sort(function (a, b) {
+      return a.naam.toLowerCase() < b.naam.toLowerCase() ? -1 : 1;
+    }).forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v.naam;
+      o.textContent = v.som || v.naam;
+      sel.appendChild(o);
+    });
+  })();
+
+  el("dumpBtn").addEventListener("click", function () {
+    var v = el("dump").value.trim();
+    if (!v) return;
+
+    var load = loadMap(state.items);
+    var gelukt = [], mislukt = [];
+
+    v.split("\n").forEach(function (regel, n) {
+      if (!regel.trim()) return;
+      var r = leesRegel(regel);
+      if (r.fout) {
+        state.raw.push({ id: "r" + Date.now() + "-" + n, text: regel.trim(), reden: r.fout, date: key(today()) });
+        mislukt.push(regel.trim() + " — " + r.fout);
+        return;
+      }
+      var it = {
+        id: "u" + Date.now() + "-" + n,
+        vak: r.vak, soort: r.soort, deadline: r.deadline, count: r.count
+      };
+      it.sessions = planSessions(it, load);
+      state.items.push(it);
+      var cfg = soort(it.soort);
+      gelukt.push(it.vak + " · " + cfg.event + " op " + DAYS_LONG[dow(parse(it.deadline))] + " " +
+        nice(parse(it.deadline)) + " · " + it.sessions.length + " keer " +
+        (it.soort === "toets" ? "leren" : "eraan werken") + ", vanaf " + nice(parse(it.sessions[0].date)));
+    });
+
+    el("dump").value = "";
+    var ok = el("dumpOk");
+    ok.hidden = false;
+    ok.innerHTML =
+      (gelukt.length ? '<b>Ingezet:</b><br>' + gelukt.map(esc).join("<br>") : "") +
+      (gelukt.length && mislukt.length ? "<br><br>" : "") +
+      (mislukt.length ? '<b>Blijft staan als \uD83D\uDCE5:</b><br>' + mislukt.map(esc).join("<br>") : "");
+    save();
+    render();
+  });
+
+  el("addBtn").addEventListener("click", function () {
+    var vak = el("fVak").value;
+    var soortKeuze = el("fSoort").value;
+    var datum = el("fDatum").value;
+    var ok = el("addOk");
+    function fout(t) { ok.hidden = false; ok.style.color = "var(--late)"; ok.textContent = t; }
+
+    if (!vak) return fout("Kies eerst een vak.");
+    if (!soortKeuze) return fout("Kies wat het is: een toets, een werkstuk of een presentatie.");
+    if (!datum) return fout("Op welke datum moet het klaar zijn?");
+    if (diff(key(today()), datum) < 1) return fout("Die datum is vandaag of al geweest — dan valt er niets meer te verdelen.");
+
+    var it = {
+      id: "u" + Date.now(),
+      vak: vak,
+      soort: soortKeuze,
+      deadline: datum,
+      count: parseInt(el("fAantal").value, 10) || 0
+    };
+    it.sessions = planSessions(it, loadMap(state.items));
+    state.items.push(it);
+    el("fVak").value = "";
+    el("fSoort").value = "";
+    el("fAantal").value = "";
+    el("fDatum").value = "";
+    ok.hidden = false;
+    ok.style.color = "var(--ink-soft)";
+    ok.textContent = it.sessions.length + " keer ingezet, de eerste op " +
+      DAYS_LONG[dow(parse(it.sessions[0].date))] + " " + nice(parse(it.sessions[0].date)) + ".";
+    save();
+    render();
+  });
+
+  el("vorigeDag").addEventListener("click", function () {
+    dag = key(add(parse(dag), -1));
+    render();
+  });
+
+  el("volgendeDag").addEventListener("click", function () {
+    dag = key(add(parse(dag), 1));
+    render();
+  });
+
+  el("naarVandaag").addEventListener("click", function () {
+    dag = key(today());
+    render();
+  });
+
+  el("ververs").addEventListener("click", function () {
+    laden(function () { render(); });
+  });
+
+  // Terug op het tabblad na een tijd weg: ophalen wat er intussen op een ander
+  // apparaat is veranderd.
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && !bezig && !nogmaals) {
+      laden(function () { render(); });
+    }
+  });
+
+  laden(function () { render(); });
+})();
+</script>
+</body>
+</html>
