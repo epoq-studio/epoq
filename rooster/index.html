@@ -171,7 +171,7 @@
 
   .drow {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     gap: 3px 9px;
     align-items: baseline;
     padding: 11px 0;
@@ -188,9 +188,49 @@
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
   .drow .when b { display: block; color: var(--ink); font-weight: 600; }
-  .drow .bar { grid-column: 2 / -1; margin-top: 5px; height: 4px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+  .drow .bar { grid-column: 2 / 4; margin-top: 5px; height: 4px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
   .drow .bar i { display: block; height: 100%; background: var(--ink-soft); }
-  .drow .cnt { grid-column: 2 / -1; font-size: 12.5px; color: var(--ink-faint); }
+  .drow .cnt { grid-column: 2 / 4; font-size: 12.5px; color: var(--ink-faint); }
+
+  .wijzig {
+    grid-column: 4; grid-row: 1 / span 2;
+    align-self: center;
+    font: 600 11.5px/1 "Archivo", system-ui, sans-serif;
+    letter-spacing: .05em; text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 7px 10px;
+    cursor: pointer;
+  }
+
+  .wijzig:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .wijzig:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .wijzig[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+
+  /* het bewerkvak dat onder een regel openklapt */
+  .bewerk {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+    padding: 13px 14px;
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 12px;
+  }
+
+  .bewerk > div { min-width: 0; }
+  .bewerk .knoppen { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .bewerk .melding { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--attn); }
+  .bewerk input, .bewerk select { background: var(--surface); }
+
+  .btn.klein { margin-top: 0; font-size: 13px; padding: 7px 12px; }
+  .btn.klein.leeg { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+  .btn.klein.wis { background: transparent; color: var(--attn); border-color: var(--attn-line); margin-left: auto; }
+  .btn.klein.wis.zeker { background: var(--attn); border-color: var(--attn); color: var(--surface); }
 
   /* ---------- kalender ---------- */
 
@@ -340,6 +380,8 @@
 
   footer { font-size: 12.5px; color: var(--ink-faint); border-top: 1px solid var(--line); padding-top: 14px; }
   footer button { font: inherit; color: var(--ink-faint); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+  footer button:hover { color: var(--ink-soft); }
+  footer button.zeker { color: var(--attn); font-weight: 600; }
 
   @media (max-width: 760px) {
     .wrap { padding: 18px 13px 54px; gap: 20px; }
@@ -370,7 +412,9 @@
     .nav { display: inline-flex; }
     .drow .when { grid-column: 1 / -1; grid-row: auto; text-align: left; }
     .drow .when b { display: inline; margin-right: 6px; }
-    .drow .act, .drow .bar, .drow .cnt { grid-column: 1 / -1; }
+    .drow .act, .drow .bar, .drow .cnt { grid-column: 1 / 4; }
+    .bewerk { grid-template-columns: 1fr 1fr; }
+    .bewerk .datum { grid-column: 1 / -1; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -461,7 +505,7 @@
   </div>
 
   <footer>
-    <span id="stamp"></span> · <button id="ververs">opnieuw ophalen</button>
+    <span id="stamp"></span> · <button id="ververs">opnieuw ophalen</button><span id="opruimen" hidden> · <button id="opruimKnop"></button></span>
   </footer>
 
 </div>
@@ -817,6 +861,9 @@
       });
   }
 
+  var bewerkt = null;      // id van het item dat openstaat om te wijzigen
+  var bevestig = null;     // id waarvan de verwijderknop om bevestiging vraagt
+
   // Welke dag het dagpaneel toont. Op de telefoon stapt ze hiermee door de
   // dagen; op de laptop staat hij altijd op vandaag en zijn de pijltjes weg.
   var dag = key(today());
@@ -900,6 +947,113 @@
       render();
     });
     return b;
+  }
+
+  // Het vak dat onder een regel openklapt: datum, aantal, soort, en weghalen.
+  function bewerkVak(it) {
+    var box = document.createElement("div");
+    box.className = "bewerk";
+
+    function veld(klasse, label, node) {
+      var d = document.createElement("div");
+      if (klasse) d.className = klasse;
+      var l = document.createElement("label");
+      l.textContent = label;
+      l.setAttribute("for", node.id);
+      d.appendChild(l);
+      d.appendChild(node);
+      box.appendChild(d);
+      return node;
+    }
+
+    var soortKeuze = document.createElement("select");
+    soortKeuze.id = "b-soort";
+    [["toets", "toets"], ["werkstuk", "werkstuk of verslag"], ["presentatie", "presentatie"], ["anders", "iets anders"]]
+      .forEach(function (o) {
+        var opt = document.createElement("option");
+        opt.value = o[0];
+        opt.textContent = o[1];
+        if (it.soort === o[0]) opt.selected = true;
+        soortKeuze.appendChild(opt);
+      });
+    veld("", "Wat is het", soortKeuze);
+
+    var datum = document.createElement("input");
+    datum.type = "date";
+    datum.id = "b-datum";
+    datum.value = it.deadline;
+    veld("datum", "Wanneer moet het klaar zijn", datum);
+
+    var aantal = document.createElement("input");
+    aantal.type = "number";
+    aantal.id = "b-aantal";
+    aantal.min = 1;
+    aantal.max = 20;
+    aantal.inputMode = "numeric";
+    aantal.value = it.count || it.sessions.length;
+    veld("", "Hoe vaak eraan werken", aantal);
+
+    var melding = document.createElement("p");
+    melding.className = "melding";
+    melding.hidden = true;
+
+    var knoppen = document.createElement("div");
+    knoppen.className = "knoppen";
+
+    var bewaar = document.createElement("button");
+    bewaar.type = "button";
+    bewaar.className = "btn klein";
+    bewaar.textContent = "Opslaan";
+    bewaar.addEventListener("click", function () {
+      var nieuweDatum = datum.value;
+      if (!nieuweDatum) { melding.hidden = false; melding.textContent = "Vul een datum in."; return; }
+      if (diff(key(today()), nieuweDatum) < 1) {
+        melding.hidden = false;
+        melding.textContent = "Die datum is vandaag of al geweest — dan valt er niets te verdelen.";
+        return;
+      }
+      var gedaan = it.sessions.filter(function (s) { return s.done; }).length;
+      it.soort = soortKeuze.value;
+      it.deadline = nieuweDatum;
+      it.count = parseInt(aantal.value, 10) || 0;
+      // de eigen oude momenten tellen niet mee bij het opnieuw verdelen
+      it.sessions = planSessions(it, loadMap(state.items.filter(function (x) { return x.id !== it.id; })));
+      for (var i = 0; i < gedaan && i < it.sessions.length; i++) it.sessions[i].done = true;
+      bewerkt = null;
+      bevestig = null;
+      save();
+      render();
+    });
+    knoppen.appendChild(bewaar);
+
+    var annuleer = document.createElement("button");
+    annuleer.type = "button";
+    annuleer.className = "btn klein leeg";
+    annuleer.textContent = "Annuleren";
+    annuleer.addEventListener("click", function () {
+      bewerkt = null;
+      bevestig = null;
+      render();
+    });
+    knoppen.appendChild(annuleer);
+
+    var wis = document.createElement("button");
+    wis.type = "button";
+    wis.className = "btn klein wis" + (bevestig === it.id ? " zeker" : "");
+    wis.textContent = bevestig === it.id ? "Zeker weten? Verwijder" : "Verwijderen";
+    wis.addEventListener("click", function () {
+      if (bevestig !== it.id) { bevestig = it.id; render(); return; }
+      state.items = state.items.filter(function (x) { return x.id !== it.id; });
+      bewerkt = null;
+      bevestig = null;
+      save();
+      render();
+    });
+    knoppen.appendChild(wis);
+
+    box.appendChild(knoppen);
+    box.appendChild(melding);
+    return box;
   }
 
   function render() {
@@ -1034,9 +1188,29 @@
         '<span class="cnt">' + done + " van de " + n + " keer " +
           (it.soort === "toets" ? "geleerd" : "gedaan") +
           (done < n ? " · volgende keer " + wanneer(it.sessions.filter(function (x) { return !x.done; })[0].date, tk) : "") +
-        "</span>";
+        "</span>" +
+        '<button class="wijzig" type="button" aria-expanded="' + (bewerkt === it.id) + '">wijzig</button>';
+
+      r.querySelector(".wijzig").addEventListener("click", function () {
+        bewerkt = bewerkt === it.id ? null : it.id;
+        bevestig = null;
+        render();
+      });
+
+      if (bewerkt === it.id) r.appendChild(bewerkVak(it));
       lc.appendChild(r);
     });
+
+    /* opruimen: items waarvan de datum meer dan een maand voorbij is */
+    var oud = state.items.filter(function (it) { return diff(it.deadline, tk) > 30; });
+    el("opruimen").hidden = !oud.length;
+    if (oud.length) {
+      var k = el("opruimKnop");
+      k.textContent = bevestig === "oud"
+        ? "zeker weten? " + oud.length + " afgelopen " + (oud.length === 1 ? "item" : "items") + " weghalen"
+        : oud.length + " afgelopen " + (oud.length === 1 ? "item" : "items") + " opruimen";
+      k.className = bevestig === "oud" ? "zeker" : "";
+    }
 
     zetKop();
     el("stamp").textContent = "Bijgewerkt " + DAYS_LONG[dow(t)] + " " + nice(t);
@@ -1139,6 +1313,15 @@
 
   el("naarVandaag").addEventListener("click", function () {
     dag = key(today());
+    render();
+  });
+
+  el("opruimKnop").addEventListener("click", function () {
+    if (bevestig !== "oud") { bevestig = "oud"; render(); return; }
+    var tk = key(today());
+    state.items = state.items.filter(function (it) { return diff(it.deadline, tk) <= 30; });
+    bevestig = null;
+    save();
     render();
   });
 
