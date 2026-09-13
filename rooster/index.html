@@ -304,6 +304,37 @@
   .cell .dnum em { font-style: normal; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
   .cell .tag { font-size: 10.5px; color: var(--ink-faint); letter-spacing: .04em; }
 
+  /* ---------- slepen ---------- */
+
+  /* Een voorbereidingsblokje in het raster is te pakken. touch-action: none
+     houdt de vinger bij het blokje in plaats van de pagina te scrollen; naast
+     de blokjes scrollt alles gewoon. */
+  .cell .chip.sleepbaar { cursor: grab; touch-action: none; }
+  body.sleepbezig { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+  body.sleepbezig .chip { cursor: grabbing; }
+
+  .chip.sleepend { opacity: .25; }
+
+  .sleepbeeld {
+    position: fixed; z-index: 60; pointer-events: none;
+    margin: 0; box-shadow: 0 10px 24px rgba(60, 30, 45, .25);
+    transform: rotate(-1.5deg); opacity: .96;
+  }
+
+  /* waar het naartoe mag, en waar niet */
+  .cell.kan { border-style: dashed; border-color: var(--ink-faint); }
+  .cell.kanniet { opacity: .45; }
+  .cell.kan.doel {
+    border-style: solid; border-color: var(--accent);
+    box-shadow: inset 0 0 0 2px var(--accent);
+    background-color: var(--sunken);
+  }
+  .cell.kan.vol.doel { border-color: var(--late); box-shadow: inset 0 0 0 2px var(--late); }
+  .cell.vol .dnum::after { content: "vol"; color: var(--late); font-size: 10.5px; }
+
+  .sleeptip { margin: 0 0 10px; font-size: 12.5px; color: var(--ink-faint); }
+  .sleepmelding { margin: 0 0 10px; font-size: 13px; color: var(--accent); font-weight: 500; }
+
   /* ---------- blokjes ---------- */
 
   .em {
@@ -479,6 +510,8 @@
 
   <section id="rasterSec">
     <h2 id="calTitle">Vijf weken</h2>
+    <p class="sleeptip" id="sleeptip">Een blokje om te leren of te maken kun je naar een andere dag slepen. De toets zelf staat vast.</p>
+    <p class="sleepmelding" id="sleepMelding" hidden></p>
     <div class="cal-head" id="calHead"></div>
     <div class="cal" id="cal"></div>
     <div class="legend">
@@ -1269,6 +1302,172 @@
     return box;
   }
 
+  /* ---------- slepen ----------
+     Een voorbereidingsblokje in het raster naar een andere dag trekken. Werkt
+     met muis, vinger en pen (pointer events). Een tik zonder beweging blijft
+     gewoon afvinken: pas na een paar pixels — bij een vinger na een korte
+     druk — begint het slepen. */
+
+  var sleep = null;       // wat er nu aan de muis of vinger hangt
+  var negeerKlik = false; // de klik na het loslaten mag niet ook nog afvinken
+
+  document.addEventListener("click", function (ev) {
+    if (negeerKlik) {
+      negeerKlik = false;
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+  }, true);
+
+  function slikKlik() {
+    negeerKlik = true;
+    // komt er geen klik (bijvoorbeeld bij een vinger), dan vervalt het vanzelf
+    setTimeout(function () { negeerKlik = false; }, 300);
+  }
+
+  function zegSleep(tekst) {
+    var p = el("sleepMelding");
+    if (!p) return;
+    p.hidden = !tekst;
+    p.textContent = tekst || "";
+  }
+
+  function magHier(datum, it, s) {
+    if (datum === s.date) return "zelfde";
+    if (datum < key(today())) return "Die dag is al geweest.";
+    if (diff(datum, it.deadline) < 0) return "Dat is na " + nice(parse(it.deadline)) + " — dan is het al klaar.";
+    if (!plannable(parse(datum))) return DAYS_LONG[dow(parse(datum))] + " houden we vrij (" + BLOCKED[dow(parse(datum))] + ").";
+    return null;
+  }
+
+  function sleepbaar(node, entry) {
+    node.classList.add("sleepbaar");
+    node.addEventListener("pointerdown", function (ev) {
+      if (ev.button) return;                 // alleen de linkerknop
+      if (sleep) return;
+      sleep = {
+        node: node, entry: entry,
+        x: ev.clientX, y: ev.clientY,
+        actief: false, wacht: null
+      };
+      if (ev.pointerType === "touch" || ev.pointerType === "pen") {
+        sleep.wacht = setTimeout(function () { if (sleep && !sleep.actief) beginSleep(); }, 280);
+      }
+      document.addEventListener("pointermove", sleepBeweeg, { passive: false });
+      document.addEventListener("pointerup", sleepEinde);
+      document.addEventListener("pointercancel", sleepStop);
+    });
+  }
+
+  function beginSleep() {
+    var r = sleep.node.getBoundingClientRect();
+    var beeld = sleep.node.cloneNode(true);
+    beeld.classList.add("sleepbeeld");
+    beeld.classList.remove("sleepend");
+    beeld.style.width = r.width + "px";
+    document.body.appendChild(beeld);
+
+    sleep.beeld = beeld;
+    sleep.grijpX = sleep.x - r.left;
+    sleep.grijpY = sleep.y - r.top;
+    sleep.actief = true;
+    sleep.node.classList.add("sleepend");
+    document.body.classList.add("sleepbezig");
+    zegSleep(null);
+    merkDagen();
+    zetBeeld(sleep.x, sleep.y);
+  }
+
+  // Welke dagen mogen, en welke zitten al vol.
+  function merkDagen() {
+    var it = sleep.entry.item, s = sleep.entry.s;
+    [].forEach.call(document.querySelectorAll("#cal .cell"), function (c) {
+      var d = c.getAttribute("data-datum");
+      var reden = magHier(d, it, s);
+      if (reden) { if (reden !== "zelfde") c.classList.add("kanniet"); return; }
+      c.classList.add("kan");
+      if (drukte(d, s.id) >= MAX_PER_DAY) c.classList.add("vol");
+    });
+  }
+
+  function zetBeeld(x, y) {
+    sleep.beeld.style.left = (x - sleep.grijpX) + "px";
+    sleep.beeld.style.top = (y - sleep.grijpY) + "px";
+  }
+
+  function celOnder(x, y) {
+    var n = document.elementFromPoint(x, y);
+    return n ? n.closest(".cell") : null;
+  }
+
+  function sleepBeweeg(ev) {
+    if (!sleep) return;
+    var weg = Math.abs(ev.clientX - sleep.x) + Math.abs(ev.clientY - sleep.y);
+    if (!sleep.actief) {
+      if (sleep.wacht) {                     // vinger: nog in de korte druk
+        if (weg > 12) sleepStop();           // ze wil scrollen, niet slepen
+        return;
+      }
+      if (weg < 6) return;
+      beginSleep();
+    }
+    ev.preventDefault();
+    zetBeeld(ev.clientX, ev.clientY);
+
+    var vorig = document.querySelector("#cal .cell.doel");
+    if (vorig) vorig.classList.remove("doel");
+    var cel = celOnder(ev.clientX, ev.clientY);
+    if (cel && cel.classList.contains("kan")) cel.classList.add("doel");
+
+    var h = window.innerHeight;
+    if (ev.clientY < 80) window.scrollBy(0, -16);
+    else if (ev.clientY > h - 80) window.scrollBy(0, 16);
+  }
+
+  function sleepEinde(ev) {
+    if (!sleep) return;
+    if (!sleep.actief) { sleepStop(); return; }   // gewone tik: afvinken
+
+    var it = sleep.entry.item, s = sleep.entry.s;
+    var cel = celOnder(ev.clientX, ev.clientY);
+    var datum = cel ? cel.getAttribute("data-datum") : null;
+    var raak = cel && cel.classList.contains("kan");
+    var vol = raak && cel.classList.contains("vol");
+
+    sleepStop();
+
+    if (!datum) { zegSleep(null); return; }
+    if (!raak) {
+      var reden = magHier(datum, it, s);
+      zegSleep(reden === "zelfde" ? null : reden);
+      return;
+    }
+
+    s.date = datum;
+    it.sessions.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    it.sessions.forEach(function (x, i) { x.nr = i + 1; });
+    save();
+    render();
+    zegSleep(it.vak + " staat nu op " + DAYS_LONG[dow(parse(datum))] + " " + nice(parse(datum)) +
+      (vol ? " — er stonden al " + MAX_PER_DAY + " dingen op die dag." : "."));
+  }
+
+  function sleepStop() {
+    if (!sleep) return;
+    if (sleep.wacht) clearTimeout(sleep.wacht);
+    if (sleep.beeld) sleep.beeld.remove();
+    if (sleep.node) sleep.node.classList.remove("sleepend");
+    if (sleep.actief) slikKlik();
+    document.body.classList.remove("sleepbezig");
+    [].forEach.call(document.querySelectorAll("#cal .cell"), function (c) {
+      c.classList.remove("kan", "kanniet", "vol", "doel");
+    });
+    document.removeEventListener("pointermove", sleepBeweeg, { passive: false });
+    document.removeEventListener("pointerup", sleepEinde);
+    document.removeEventListener("pointercancel", sleepStop);
+    sleep = null;
+  }
+
   // Klikken op een dag in het raster zet het dagpaneel op die dag. De datum
   // gaat mee in een eigen functie: anders delen alle 35 cellen één variabele
   // en komt elke klik op dezelfde dag uit.
@@ -1377,12 +1576,18 @@
 
       var cell = document.createElement("div");
       cell.className = "cell" + (isToday ? " today" : "") + (past ? " past" : "") + (blk ? " blocked" : "");
+      cell.setAttribute("data-datum", k);
       var h = document.createElement("div");
       h.className = "dnum";
       h.innerHTML = "<span>" + d.getDate() + (d.getDate() === 1 || i === 0 ? " <em>" + MONTHS[d.getMonth()] + "</em>" : "") + "</span>" +
         (blk ? '<span class="tag">' + BLOCKED[dow(d)] + "</span>" : "");
       cell.appendChild(h);
-      entries.forEach(function (e) { cell.appendChild(chip(e)); });
+      entries.forEach(function (e) {
+        var c = chip(e);
+        // voorbereiden mag je verslepen; het moment zelf en losse tekst niet
+        if (e.s && diff(tk, e.item.deadline) >= 0) sleepbaar(c, e);
+        cell.appendChild(c);
+      });
       cell.addEventListener("click", kiesDag(k));
       cal.appendChild(cell);
 
