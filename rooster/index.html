@@ -229,6 +229,32 @@
   .bewerk .melding { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--attn); }
   .bewerk input, .bewerk select { background: var(--surface); }
 
+  /* een los leermoment naar een andere dag */
+  .bigrij { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; align-items: center; }
+  .verzetknop {
+    font: 600 11.5px/1 "Archivo", system-ui, sans-serif;
+    letter-spacing: .05em; text-transform: uppercase;
+    color: var(--ink-soft);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 9px 10px;
+    min-height: 44px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .verzetknop:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .verzetknop:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .verzetknop[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+
+  .bewerk.verzetvak { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) auto; margin-top: 7px; }
+  .verzetvak .datum { grid-column: 1; }
+  .verzetvak .stappen { grid-column: 2; display: flex; flex-direction: row; gap: 8px; align-self: end; }
+  .verzetvak .stappen .btn { flex: 0 1 auto; min-height: 44px; }
+  .verzetvak .knoppen { flex-direction: row; align-items: center; }
+  .verzetvak .knoppen .btn { min-height: 44px; }
+  .verzetvak .hint { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--ink-faint); }
+
   .btn.klein { margin-top: 0; font-size: 13px; padding: 7px 12px; }
   .btn.klein.leeg { background: transparent; color: var(--ink-soft); border-color: var(--line); }
   .btn.klein.wis { background: transparent; color: var(--attn); border-color: var(--attn-line); margin-left: auto; }
@@ -418,6 +444,9 @@
     .drow .act, .drow .bar, .drow .cnt { grid-column: 1 / 4; }
     .bewerk { grid-template-columns: 1fr 1fr; }
     .bewerk .datum { grid-column: 1 / -1; }
+    .bewerk.verzetvak { grid-template-columns: minmax(0, 1fr); }
+    .verzetvak .stappen { grid-column: 1; }
+    .verzetvak .stappen .btn { flex: 1 1 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -866,6 +895,8 @@
 
   var bewerkt = null;      // id van het item dat openstaat om te wijzigen
   var bevestig = null;     // id waarvan de verwijderknop om bevestiging vraagt
+  var verzet = null;       // id van het leermoment dat verplaatst wordt
+  var bericht = null;      // eenmalig regeltje boven het dagpaneel
 
   // Welke dag het dagpaneel toont. Op de telefoon stapt ze hiermee door de
   // dagen; op de laptop staat hij altijd op vandaag en zijn de pijltjes weg.
@@ -950,6 +981,185 @@
       render();
     });
     return b;
+  }
+
+  // Een groot blokje in het dagpaneel of bij de achterstand. Leermomenten
+  // krijgen er een knopje bij om ze naar een andere dag te schuiven; de toets
+  // zelf en nog te verwerken tekst niet.
+  function groteChip(entry, ctx) {
+    var c = chip(entry, ctx);
+    c.className += " big";
+    // geen verzetknop bij de toets zelf, bij losse tekst, of als de dag
+    // waarop het klaar moet zijn al geweest is
+    if (!entry.s || diff(key(today()), entry.item.deadline) < 0) return c;
+
+    var rij = document.createElement("div");
+    rij.className = "bigrij";
+    rij.appendChild(c);
+
+    var knop = document.createElement("button");
+    knop.type = "button";
+    knop.className = "verzetknop";
+    knop.textContent = "verzet";
+    knop.title = entry.item.vak + " — naar een andere dag";
+    knop.setAttribute("aria-expanded", verzet === entry.s.id ? "true" : "false");
+    knop.addEventListener("click", function () {
+      verzet = verzet === entry.s.id ? null : entry.s.id;
+      bevestig = null;
+      render();
+    });
+    rij.appendChild(knop);
+
+    if (verzet === entry.s.id) rij.appendChild(verzetVak(entry.item, entry.s));
+    return rij;
+  }
+
+  // Hoeveel leermomenten er al op een dag staan (dit moment niet meegeteld).
+  function drukte(datum, negeer) {
+    var n = 0;
+    state.items.forEach(function (it) {
+      it.sessions.forEach(function (s) {
+        if (s.date === datum && s.id !== negeer) n++;
+      });
+    });
+    return n;
+  }
+
+  // Eén dag op of terug, geblokkeerde dagen overgeslagen, binnen de grenzen.
+  // Vooruit vanaf een dag die al geweest is slaan we het verleden over.
+  function stap(datum, richting, it) {
+    var d = parse(datum);
+    for (var i = 0; i < 60; i++) {
+      d = add(d, richting);
+      if (diff(key(d), it.deadline) < 0) return null;
+      if (key(d) < key(today())) {
+        if (richting < 0) return null;
+        continue;
+      }
+      if (plannable(d)) return key(d);
+    }
+    return null;
+  }
+
+  // Het vak om één leermoment te verplaatsen.
+  function verzetVak(it, s) {
+    var box = document.createElement("div");
+    box.className = "bewerk verzetvak";
+
+    var vak = document.createElement("div");
+    vak.className = "datum";
+    var lab = document.createElement("label");
+    lab.textContent = "Naar welke dag";
+    lab.setAttribute("for", "v-datum");
+    var datum = document.createElement("input");
+    datum.type = "date";
+    datum.id = "v-datum";
+    // stond hij al in het verleden, dan begint het vak bij de eerstvolgende
+    // dag waarop we wel plannen
+    var startDag = s.date < key(today()) ? key(today()) : s.date;
+    if (!plannable(parse(startDag))) startDag = stap(startDag, 1, it) || startDag;
+    datum.value = startDag;
+    datum.min = key(today());
+    datum.max = it.deadline;
+    vak.appendChild(lab);
+    vak.appendChild(datum);
+    box.appendChild(vak);
+
+    var melding = document.createElement("p");
+    melding.className = "melding";
+    melding.hidden = true;
+
+    var hint = document.createElement("p");
+    hint.className = "hint";
+    var vrij = Object.keys(BLOCKED).map(function (n) { return DAYS_LONG[+n]; });
+    hint.textContent = "Uiterlijk " + nice(parse(it.deadline)) + ", de dag zelf. Op " +
+      vrij.join(" en ") + " zetten we niets in.";
+
+    var stappen = document.createElement("div");
+    stappen.className = "stappen";
+
+    function stapKnop(tekst, richting) {
+      var k = document.createElement("button");
+      k.type = "button";
+      k.className = "btn klein leeg";
+      k.textContent = tekst;
+      k.addEventListener("click", function () {
+        var nieuw = stap(datum.value || s.date, richting, it);
+        if (!nieuw) {
+          melding.hidden = false;
+          melding.textContent = richting < 0
+            ? "Verder terug kan niet — dat is al geweest."
+            : "Verder vooruit kan niet — dan is de dag zelf al voorbij.";
+          return;
+        }
+        datum.value = nieuw;
+        melding.hidden = true;
+        bevestig = null;
+      });
+      stappen.appendChild(k);
+    }
+    stapKnop("‹ dag eerder", -1);
+    stapKnop("dag later ›", 1);
+    box.appendChild(stappen);
+
+    var knoppen = document.createElement("div");
+    knoppen.className = "knoppen";
+
+    var bewaar = document.createElement("button");
+    bewaar.type = "button";
+    bewaar.className = "btn klein" + (bevestig === s.id ? " wis zeker" : "");
+    bewaar.textContent = bevestig === s.id ? "Toch verzetten" : "Verzetten";
+    bewaar.addEventListener("click", function () {
+      var nieuw = datum.value;
+      function fout(tekst) { melding.hidden = false; melding.textContent = tekst; bevestig = null; }
+
+      if (!nieuw) return fout("Kies een dag.");
+      if (nieuw === s.date) return fout("Dat is de dag waar hij al staat.");
+      if (diff(key(today()), nieuw) < 0) return fout("Die dag is al geweest.");
+      if (diff(nieuw, it.deadline) < 0) {
+        return fout("Dat is na " + nice(parse(it.deadline)) + " — dan is het al klaar.");
+      }
+      if (!plannable(parse(nieuw))) {
+        return fout("Op " + DAYS_LONG[dow(parse(nieuw))] + " zetten we niets in (" +
+          BLOCKED[dow(parse(nieuw))] + "). Kies een andere dag.");
+      }
+      if (drukte(nieuw, s.id) >= MAX_PER_DAY && bevestig !== s.id) {
+        melding.hidden = false;
+        melding.textContent = "Op die dag staan al " + MAX_PER_DAY +
+          " dingen. Klik nog een keer als je het toch wilt.";
+        bevestig = s.id;
+        bewaar.className = "btn klein wis zeker";
+        bewaar.textContent = "Toch verzetten";
+        return;
+      }
+
+      s.date = nieuw;
+      it.sessions.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+      it.sessions.forEach(function (x, i) { x.nr = i + 1; });
+      bericht = it.vak + " staat nu op " + DAYS_LONG[dow(parse(nieuw))] + " " +
+        nice(parse(nieuw)) + ".";
+      verzet = null;
+      bevestig = null;
+      save();
+      render();
+    });
+    knoppen.appendChild(bewaar);
+
+    var annuleer = document.createElement("button");
+    annuleer.type = "button";
+    annuleer.className = "btn klein leeg";
+    annuleer.textContent = "Annuleren";
+    annuleer.addEventListener("click", function () {
+      verzet = null;
+      bevestig = null;
+      render();
+    });
+    knoppen.appendChild(annuleer);
+
+    box.appendChild(knoppen);
+    box.appendChild(melding);
+    box.appendChild(hint);
+    return box;
   }
 
   // Het vak dat onder een regel openklapt: datum, aantal, soort, en weghalen.
@@ -1059,6 +1269,19 @@
     return box;
   }
 
+  // Klikken op een dag in het raster zet het dagpaneel op die dag. De datum
+  // gaat mee in een eigen functie: anders delen alle 35 cellen één variabele
+  // en komt elke klik op dezelfde dag uit.
+  function kiesDag(datum) {
+    return function (ev) {
+      if (ev.target.closest(".chip")) return;   // een blokje afvinken blijft afvinken
+      if (ev.target.closest(".bewerk")) return; // en een open vak blijft open
+      dag = datum;
+      render();
+      el("dagPanel").scrollIntoView({ block: "start", behavior: "smooth" });
+    };
+  }
+
   function render() {
     var t = today();
     var tk = key(t);
@@ -1077,10 +1300,17 @@
     var tc = el("todayChips");
     tc.textContent = "";
 
+    if (bericht) {
+      var bp = document.createElement("p");
+      bp.className = "empty";
+      bp.style.marginBottom = "10px";
+      bp.textContent = bericht;
+      tc.appendChild(bp);
+      bericht = null;
+    }
+
     (map[dag] || []).filter(function (e) { return e.event; }).forEach(function (e) {
-      var c = chip(e);
-      c.className += " big";
-      tc.appendChild(c);
+      tc.appendChild(groteChip(e));
     });
 
     var vandaag = (map[dag] || []).filter(function (e) { return !e.event; });
@@ -1096,9 +1326,7 @@
       tc.appendChild(p);
     } else {
       vandaag.forEach(function (e) {
-        var c = chip(e, "groot");
-        c.className += " big";
-        tc.appendChild(c);
+        tc.appendChild(groteChip(e, "groot"));
       });
       if (!vandaag.filter(function (e) { return e.s && !e.s.done; }).length) {
         var klaar = document.createElement("p");
@@ -1120,9 +1348,7 @@
     var ac = el("arrearsChips");
     ac.textContent = "";
     arr.sort(function (a, b) { return a.s.date < b.s.date ? -1 : 1; }).forEach(function (e) {
-      var c = chip(e, "arrears");
-      c.className += " big";
-      ac.appendChild(c);
+      ac.appendChild(groteChip(e, "arrears"));
     });
 
     /* koppen van het raster */
@@ -1157,12 +1383,7 @@
         (blk ? '<span class="tag">' + BLOCKED[dow(d)] + "</span>" : "");
       cell.appendChild(h);
       entries.forEach(function (e) { cell.appendChild(chip(e)); });
-      cell.addEventListener("click", function (ev) {
-        if (ev.target.closest(".chip")) return;   // een blokje afvinken blijft afvinken
-        dag = k;
-        render();
-        el("dagPanel").scrollIntoView({ block: "start", behavior: "smooth" });
-      });
+      cell.addEventListener("click", kiesDag(k));
       cal.appendChild(cell);
 
     }
@@ -1208,11 +1429,11 @@
     var oud = state.items.filter(function (it) { return diff(it.deadline, tk) > 30; });
     el("opruimen").hidden = !oud.length;
     if (oud.length) {
-      var k = el("opruimKnop");
-      k.textContent = bevestig === "oud"
+      var opruim = el("opruimKnop");
+      opruim.textContent = bevestig === "oud"
         ? "zeker weten? " + oud.length + " afgelopen " + (oud.length === 1 ? "item" : "items") + " weghalen"
         : oud.length + " afgelopen " + (oud.length === 1 ? "item" : "items") + " opruimen";
-      k.className = bevestig === "oud" ? "zeker" : "";
+      opruim.className = bevestig === "oud" ? "zeker" : "";
     }
 
     zetKop();
