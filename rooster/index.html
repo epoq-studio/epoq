@@ -583,8 +583,9 @@
   var DAYS_LONG = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"];
   var MONTHS = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
 
-  // Dinsdag: volle schooldag plus dansen. Zaterdag: vrij, dat is de inhaaldag.
-  var BLOCKED = { 1: "dansen", 5: "inhaaldag" };
+  // Dinsdag: volle schooldag plus dansen. Zaterdag was hier ook geblokkeerd
+  // (inhaaldag); sinds 13 september mag daar gewoon op worden gepland.
+  var BLOCKED = { 1: "dansen" };
   var MAX_PER_DAY = 2;
 
   /* ---------- de zes activiteiten ----------
@@ -1516,12 +1517,10 @@
     if (!vandaag.length) {
       var p = document.createElement("p");
       p.className = "empty";
-      p.innerHTML = dow(d0) === 5
-        ? "<b>Zaterdag.</b> Vrij gehouden — of je haalt iets in dat is blijven liggen."
-        : dow(d0) === 1
-          ? "<b>Dinsdag.</b> Volle dag, dus hier niets ingezet. Alleen gewoon huiswerk."
-          : "<b>Niets ingezet" + (isVandaag ? " vandaag" : " deze dag") + ".</b> " +
-            (isVandaag ? "Vooruit werken mag altijd — kijk met &rsaquo; wat er aankomt." : "");
+      p.innerHTML = dow(d0) === 1
+        ? "<b>Dinsdag.</b> Volle dag, dus hier niets ingezet. Alleen gewoon huiswerk."
+        : "<b>Niets ingezet" + (isVandaag ? " vandaag" : " deze dag") + ".</b> " +
+          (isVandaag ? "Vooruit werken mag altijd — kijk met &rsaquo; wat er aankomt." : "");
       tc.appendChild(p);
     } else {
       vandaag.forEach(function (e) {
