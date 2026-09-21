@@ -1,0 +1,555 @@
+<title>Leestimer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-top:#fff6e5;
+    --bg-bottom:#ffe1ec;
+    --ink:#4a3266;
+    --ink-soft:#8577a3;
+    --card:#ffffff;
+    --card-border:#ffd8e6;
+    --coral:#ff6f6f;
+    --coral-deep:#e94f6b;
+    --mint:#3ecf9b;
+    --mint-deep:#25b285;
+    --sun:#ffc857;
+    --sun-deep:#f5a623;
+    --sky:#5eb4ff;
+    --ring-track:#ffe6ee;
+    --shadow: 0 12px 30px -12px rgba(233,79,107,0.35);
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg-top:#241a33;
+      --bg-bottom:#3a1f36;
+      --ink:#fbeaff;
+      --ink-soft:#cdb8e6;
+      --card:#33243f;
+      --card-border:#4d3459;
+      --coral:#ff8a8a;
+      --coral-deep:#ff6f8f;
+      --mint:#5be0ad;
+      --mint-deep:#38c496;
+      --sun:#ffd066;
+      --sun-deep:#ffb84d;
+      --sky:#7cc4ff;
+      --ring-track:#4a3255;
+      --shadow: 0 12px 30px -12px rgba(0,0,0,0.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg-top:#241a33;
+    --bg-bottom:#3a1f36;
+    --ink:#fbeaff;
+    --ink-soft:#cdb8e6;
+    --card:#33243f;
+    --card-border:#4d3459;
+    --coral:#ff8a8a;
+    --coral-deep:#ff6f8f;
+    --mint:#5be0ad;
+    --mint-deep:#38c496;
+    --sun:#ffd066;
+    --sun-deep:#ffb84d;
+    --sky:#7cc4ff;
+    --ring-track:#4a3255;
+    --shadow: 0 12px 30px -12px rgba(0,0,0,0.55);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100%;
+    background:
+      radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--sun) 35%, transparent), transparent 45%),
+      radial-gradient(circle at 85% 15%, color-mix(in srgb, var(--sky) 30%, transparent), transparent 40%),
+      radial-gradient(circle at 80% 90%, color-mix(in srgb, var(--mint) 30%, transparent), transparent 45%),
+      linear-gradient(160deg, var(--bg-top), var(--bg-bottom));
+    color:var(--ink);
+    font-family:'Nunito', ui-rounded, system-ui, sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: max(20px, env(safe-area-inset-top,0px)) 16px max(20px, env(safe-area-inset-bottom,0px));
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(2px);
+    opacity:0.5;
+    animation: float 9s ease-in-out infinite;
+    pointer-events:none;
+  }
+  .blob.b1{width:70px;height:70px;background:var(--sun);top:8%;left:8%;animation-delay:0s;}
+  .blob.b2{width:40px;height:40px;background:var(--mint);top:70%;left:10%;animation-delay:1.5s;}
+  .blob.b3{width:55px;height:55px;background:var(--sky);top:15%;right:10%;animation-delay:3s;}
+  .blob.b4{width:34px;height:34px;background:var(--coral);top:78%;right:12%;animation-delay:4.5s;}
+
+  @keyframes float{
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    50%{transform:translateY(-18px) rotate(12deg);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .blob{animation:none;}
+  }
+
+  .card{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:32px;
+    box-shadow:var(--shadow);
+    padding:clamp(20px,4vw,40px) clamp(18px,5vw,44px) clamp(26px,4vw,40px);
+    width:100%;
+    max-width:440px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+    z-index:1;
+  }
+
+  h1{
+    font-family:'Baloo 2', ui-rounded, system-ui, sans-serif;
+    font-weight:800;
+    font-size:clamp(1.3rem, 5vw, 1.7rem);
+    margin:0;
+    text-align:center;
+    color:var(--coral-deep);
+    text-wrap:balance;
+  }
+  .subtitle{
+    margin:-10px 0 0;
+    font-weight:700;
+    color:var(--ink-soft);
+    font-size:0.95rem;
+    text-align:center;
+  }
+
+  .ring-wrap{
+    position:relative;
+    width:min(72vw, 280px);
+    aspect-ratio:1/1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible;}
+  .ring-track{fill:none;stroke:var(--ring-track);stroke-width:14;}
+  .ring-progress{
+    fill:none;
+    stroke:url(#ringGradient);
+    stroke-width:14;
+    stroke-linecap:round;
+    transition: stroke-dashoffset 0.3s linear;
+  }
+  .time-display{
+    position:absolute;
+    font-family:'Baloo 2', ui-rounded, system-ui, sans-serif;
+    font-weight:800;
+    font-size:clamp(2.6rem, 12vw, 3.6rem);
+    font-variant-numeric: tabular-nums;
+    color:var(--ink);
+    letter-spacing:1px;
+  }
+  .minute-label{
+    position:absolute;
+    bottom:22%;
+    font-weight:700;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+
+  .controls{
+    display:flex;
+    gap:12px;
+    width:100%;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  button{
+    font-family:'Baloo 2', ui-rounded, system-ui, sans-serif;
+    font-weight:700;
+    font-size:1rem;
+    border:none;
+    border-radius:999px;
+    padding:12px 22px;
+    cursor:pointer;
+    color:#fff;
+    transition: transform 0.15s ease, filter 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:active{transform:scale(0.94);}
+  button:focus-visible{outline:3px solid var(--sky); outline-offset:2px;}
+
+  #startBtn{background:linear-gradient(135deg, var(--mint), var(--mint-deep));}
+  #pauseBtn{background:linear-gradient(135deg, var(--sun), var(--sun-deep)); color:var(--ink);}
+  #resetBtn{background:linear-gradient(135deg, var(--coral), var(--coral-deep));}
+  button:disabled{opacity:0.45; cursor:default; filter:grayscale(0.3);}
+
+  .duration-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .duration-row label{
+    font-weight:700;
+    font-size:0.9rem;
+    color:var(--ink-soft);
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:0;
+    background: color-mix(in srgb, var(--sky) 16%, var(--card));
+    border:1px solid var(--card-border);
+    border-radius:999px;
+    overflow:hidden;
+  }
+  .stepper button{
+    background:transparent;
+    color:var(--ink);
+    padding:8px 14px;
+    font-size:1rem;
+    border-radius:0;
+  }
+  .stepper button:active{transform:none; filter:brightness(0.95);}
+  #minutesInput{
+    width:3.2em;
+    text-align:center;
+    font-family:'Baloo 2', ui-rounded, system-ui, sans-serif;
+    font-weight:800;
+    font-size:1.05rem;
+    font-variant-numeric: tabular-nums;
+    color:var(--ink);
+    background:transparent;
+    border:none;
+    padding:8px 2px;
+    -moz-appearance:textfield;
+  }
+  #minutesInput::-webkit-outer-spin-button,
+  #minutesInput::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  #minutesInput:focus{outline:none;}
+  .minutes-suffix{
+    font-weight:700;
+    font-size:0.85rem;
+    color:var(--ink-soft);
+  }
+
+  .status-pill{
+    font-weight:800;
+    font-size:0.85rem;
+    padding:6px 16px;
+    border-radius:999px;
+    background: color-mix(in srgb, var(--mint) 18%, var(--card));
+    color:var(--mint-deep);
+    text-align:center;
+  }
+  .status-pill.paused{background:color-mix(in srgb, var(--sun) 25%, var(--card)); color:var(--sun-deep);}
+  .status-pill.done{background:color-mix(in srgb, var(--coral) 20%, var(--card)); color:var(--coral-deep);}
+
+  .confetti-piece{
+    position:fixed;
+    top:-10px;
+    width:10px;
+    height:14px;
+    border-radius:3px;
+    pointer-events:none;
+    animation: confetti-fall linear forwards;
+    z-index:5;
+  }
+  @keyframes confetti-fall{
+    to{ transform: translateY(110vh) rotate(540deg); opacity:0.2; }
+  }
+
+  .shake{ animation: shake 0.5s ease; }
+  @keyframes shake{
+    0%,100%{transform:translate(0,0) rotate(0);}
+    20%{transform:translate(-4px,0) rotate(-2deg);}
+    40%{transform:translate(4px,0) rotate(2deg);}
+    60%{transform:translate(-3px,0) rotate(-1deg);}
+    80%{transform:translate(3px,0) rotate(1deg);}
+  }
+</style>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+<div class="blob b4"></div>
+
+<div class="card" id="card">
+  <h1>🎈 Leestimer 🎈</h1>
+  <p class="subtitle">Lees lekker door, elke minuut een vrolijk geluidje!</p>
+
+  <div class="duration-row">
+    <label for="minutesInput">Duur:</label>
+    <div class="stepper">
+      <button type="button" id="minusBtn" aria-label="minder minuten">−</button>
+      <input type="number" id="minutesInput" value="15" min="1" max="120" step="1" inputmode="numeric">
+      <button type="button" id="plusBtn" aria-label="meer minuten">+</button>
+    </div>
+    <span class="minutes-suffix">minuten</span>
+  </div>
+
+  <div class="ring-wrap">
+    <svg viewBox="0 0 200 200">
+      <defs>
+        <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="var(--coral)"/>
+          <stop offset="50%" stop-color="var(--sun)"/>
+          <stop offset="100%" stop-color="var(--mint)"/>
+        </linearGradient>
+      </defs>
+      <circle class="ring-track" cx="100" cy="100" r="88"/>
+      <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="88" stroke-dasharray="552.9" stroke-dashoffset="0"/>
+    </svg>
+    <div class="time-display" id="timeDisplay">15:00</div>
+    <div class="minute-label" id="minuteLabel">nog 15 minuten</div>
+  </div>
+
+  <div class="status-pill" id="statusPill">Klaar om te starten</div>
+
+  <div class="controls">
+    <button id="startBtn">▶ Start</button>
+    <button id="pauseBtn" disabled>⏸ Pauze</button>
+    <button id="resetBtn">↺ Opnieuw</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var TOTAL_SECONDS_DEFAULT = 15 * 60;
+  var totalSeconds = TOTAL_SECONDS_DEFAULT;
+  var remaining = totalSeconds;
+  var timerId = null;
+  var running = false;
+  var lastMinuteMarked = Math.ceil(remaining/60);
+
+  var ring = document.getElementById('ringProgress');
+  var CIRC = 2 * Math.PI * 88;
+  ring.setAttribute('stroke-dasharray', CIRC.toFixed(1));
+
+  var timeDisplay = document.getElementById('timeDisplay');
+  var minuteLabel = document.getElementById('minuteLabel');
+  var statusPill = document.getElementById('statusPill');
+  var startBtn = document.getElementById('startBtn');
+  var pauseBtn = document.getElementById('pauseBtn');
+  var resetBtn = document.getElementById('resetBtn');
+  var minutesInput = document.getElementById('minutesInput');
+  var minusBtn = document.getElementById('minusBtn');
+  var plusBtn = document.getElementById('plusBtn');
+  var card = document.getElementById('card');
+
+  var audioCtx = null;
+  function getCtx(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e){ audioCtx = null; }
+    }
+    if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+    return audioCtx;
+  }
+
+  function tone(ctx, freq, startTime, duration, type, gainPeak){
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(gainPeak || 0.22, startTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.05);
+  }
+
+  function playMinuteChime(){
+    var ctx = getCtx();
+    if(!ctx) return;
+    var now = ctx.currentTime;
+    var notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+    notes.forEach(function(f, i){
+      tone(ctx, f, now + i * 0.09, 0.28, 'triangle', 0.2);
+    });
+    var gap = notes.length * 0.09 + 0.16;
+    notes.forEach(function(f, i){
+      tone(ctx, f, now + gap + i * 0.09, 0.28, 'triangle', 0.2);
+    });
+  }
+
+  function playFinishFanfare(){
+    var ctx = getCtx();
+    if(!ctx) return;
+    var now = ctx.currentTime;
+    var melody = [523.25, 523.25, 783.99, 1046.5, 1318.5];
+    var t = now;
+    melody.forEach(function(f, i){
+      tone(ctx, f, t, 0.32, 'triangle', 0.25);
+      t += 0.14;
+    });
+  }
+
+  function formatTime(sec){
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return (m < 10 ? '0'+m : m) + ':' + (s < 10 ? '0'+s : s);
+  }
+
+  function updateDisplay(){
+    timeDisplay.textContent = formatTime(remaining);
+    var minutesLeft = Math.ceil(remaining / 60);
+    if(remaining <= 0){
+      minuteLabel.textContent = 'klaar!';
+    } else if(minutesLeft === 1 && remaining <= 60){
+      minuteLabel.textContent = 'laatste minuut!';
+    } else {
+      minuteLabel.textContent = 'nog ' + minutesLeft + ' minuten';
+    }
+    var frac = remaining / totalSeconds;
+    var offset = CIRC * (1 - frac);
+    ring.setAttribute('stroke-dashoffset', offset.toFixed(1));
+  }
+
+  function clampMinutes(min){
+    if(isNaN(min)) min = 15;
+    return Math.min(120, Math.max(1, Math.round(min)));
+  }
+
+  function setMinutes(min, opts){
+    if(running) return;
+    min = clampMinutes(min);
+    minutesInput.value = min;
+    totalSeconds = min * 60;
+    remaining = totalSeconds;
+    lastMinuteMarked = Math.ceil(remaining/60);
+    updateDisplay();
+    statusPill.textContent = 'Klaar om te starten';
+    statusPill.className = 'status-pill';
+  }
+
+  minutesInput.addEventListener('change', function(){
+    setMinutes(parseInt(minutesInput.value, 10));
+  });
+  minutesInput.addEventListener('focus', function(){
+    if(running) minutesInput.blur();
+  });
+  minusBtn.addEventListener('click', function(){
+    setMinutes(parseInt(minutesInput.value, 10) - 1);
+  });
+  plusBtn.addEventListener('click', function(){
+    setMinutes(parseInt(minutesInput.value, 10) + 1);
+  });
+
+  function tick(){
+    remaining -= 1;
+    if(remaining < 0){ remaining = 0; }
+    updateDisplay();
+
+    var minutesLeft = Math.ceil(remaining / 60);
+    if(remaining > 0 && minutesLeft < lastMinuteMarked){
+      lastMinuteMarked = minutesLeft;
+      playMinuteChime();
+      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    }
+
+    if(remaining <= 0){
+      finish();
+    }
+  }
+
+  function launchConfetti(){
+    var colors = ['#ff6f6f','#ffc857','#3ecf9b','#5eb4ff','#e94f6b'];
+    for(var i=0;i<28;i++){
+      (function(i){
+        var piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = (Math.random()*100) + 'vw';
+        piece.style.background = colors[i % colors.length];
+        piece.style.animationDuration = (2.2 + Math.random()*1.4) + 's';
+        piece.style.transform = 'rotate(' + (Math.random()*360) + 'deg)';
+        document.body.appendChild(piece);
+        setTimeout(function(){ piece.remove(); }, 4000);
+      })(i);
+    }
+  }
+
+  function finish(){
+    stopTimer();
+    playFinishFanfare();
+    launchConfetti();
+    statusPill.textContent = '🎉 Klaar! Goed gedaan!';
+    statusPill.className = 'status-pill done';
+    startBtn.disabled = false;
+    startBtn.textContent = '▶ Start';
+    pauseBtn.disabled = true;
+    minutesInput.disabled = false;
+    minusBtn.disabled = false;
+    plusBtn.disabled = false;
+  }
+
+  function startTimer(){
+    if(running) return;
+    getCtx();
+    running = true;
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    minutesInput.disabled = true;
+    minusBtn.disabled = true;
+    plusBtn.disabled = true;
+    statusPill.textContent = '⏳ Bezig...';
+    statusPill.className = 'status-pill';
+    timerId = setInterval(tick, 1000);
+  }
+
+  function pauseTimer(){
+    if(!running) return;
+    running = false;
+    clearInterval(timerId);
+    startBtn.disabled = false;
+    startBtn.textContent = '▶ Verder';
+    pauseBtn.disabled = true;
+    statusPill.textContent = '⏸ Gepauzeerd';
+    statusPill.className = 'status-pill paused';
+  }
+
+  function stopTimer(){
+    running = false;
+    clearInterval(timerId);
+  }
+
+  function resetTimer(){
+    stopTimer();
+    remaining = totalSeconds;
+    lastMinuteMarked = Math.ceil(remaining/60);
+    updateDisplay();
+    startBtn.disabled = false;
+    startBtn.textContent = '▶ Start';
+    pauseBtn.disabled = true;
+    minutesInput.disabled = false;
+    minusBtn.disabled = false;
+    plusBtn.disabled = false;
+    statusPill.textContent = 'Klaar om te starten';
+    statusPill.className = 'status-pill';
+  }
+
+  startBtn.addEventListener('click', startTimer);
+  pauseBtn.addEventListener('click', pauseTimer);
+  resetBtn.addEventListener('click', resetTimer);
+
+  updateDisplay();
+})();
+</script>
