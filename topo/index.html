@@ -208,8 +208,16 @@ h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;line-height:
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .box h3{font-size:1.1rem}
-.mstrength{display:grid;grid-template-columns:90px 1fr 48px;gap:10px;align-items:center}
-.mstrength .bar{margin:0;height:10px}
+.ms{display:flex;flex-direction:column;gap:6px}
+.ms-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ms-top span{color:var(--muted)}
+.ms-top span b{color:var(--ink)}
+.bar2{display:flex;height:12px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar2 i{display:block;height:100%}
+.bar2 .vast{background:var(--ok)}
+.bar2 .geleerd{background:color-mix(in srgb,var(--ok) 35%,transparent)}
+.key{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
+.key i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
 .record{font-weight:700;color:var(--accent)}
 
 /* modals */
@@ -1245,17 +1253,21 @@ function freeSetup(map){
 
 function overview(){
   const p=prof(); $app.innerHTML="";
-  const strength=m=>{ const ids=itemsOf(m); const strong=ids.filter(id=>(p.items[id]?.s||0)>=2).length; return [strong, ids.length]; };
+  // geleerd = in een sessie gehad; vast = daarna in een toets of opwarmer goed (sterkte 2 of hoger)
+  const strength=m=>{ const ids=itemsOf(m); const learned=ids.filter(id=>p.items[id]?.seen).length; const vast=ids.filter(id=>p.items[id]?.seen && (p.items[id].s||0)>=2).length; return {learned, vast, total:ids.length}; };
   const hard=weakest(seenIds(null).filter(id=>(p.items[id].w||0)>0),12);
   const done=Object.entries(p.done).sort((a,b)=>a[0]-b[0]);
   const el=h(`<div class="screen res"><div class="wrap">
     <div class="topbar"><div class="brand"><span class="dot"></span><h1>Overzicht ${esc(p.name)}</h1></div><button class="btn ghost small" id="b">Terug</button></div>
     <div class="box"><h3>Hoe goed zit het?</h3>
-      ${["nl","eu","world"].map(m=>{ const [a,b]=strength(m); return `<div class="mstrength"><span>${MAPCFG[m].label}</span><div class="bar"><i style="width:${Math.round(100*a/b)}%"></i></div><span class="num">${a}/${b}</span></div>`; }).join("")}
-      <p class="note" style="margin:0">Telt plekken die je minstens twee keer achter elkaar goed had in de sessies.</p></div>
+      ${["nl","eu","world"].map(m=>{ const st=strength(m); const pv=Math.round(100*st.vast/st.total), pl=Math.round(100*(st.learned-st.vast)/st.total);
+        return `<div class="ms"><div class="ms-top"><b>${MAPCFG[m].label}</b><span class="num">${st.learned?`<b>${st.learned}</b> geleerd · <b>${st.vast}</b> zitten vast · van ${st.total}`:`nog niet begonnen · ${st.total} plekken`}</span></div>
+          <div class="bar2" role="img" aria-label="${st.learned} van ${st.total} geleerd, ${st.vast} zitten vast"><i class="vast" style="width:${pv}%"></i><i class="geleerd" style="width:${pl}%"></i></div></div>`; }).join("")}
+      <div class="key"><span><i style="background:var(--ok)"></i>Zit vast: geleerd én daarna in een toets goed</span><span><i style="background:color-mix(in srgb,var(--ok) 35%,transparent)"></i>Geleerd, nog niet getoetst of nog niet goed</span></div>
+      <p class="note" style="margin:0">Wat nog niet vastzit komt vanzelf terug in de opwarmers van de volgende sessies.</p></div>
     <div class="box"><h3>Sessies</h3>${done.length?`<div class="chips">${done.map(([n,v])=>`<span class="chip ${v.grade>=5.5?"g":"r"}">${n}. ${esc(SESSIONS[n].title)} · <b class="num">${fmt(v.grade)}</b></span>`).join("")}</div>`:`<p class="note" style="margin:0">Nog geen sessies gedaan.</p>`}</div>
     <div class="box"><h3>Lastigste plekken</h3>${hard.length?`<div class="chips">${hard.map(id=>`<span class="chip o">${esc(dname(I[id]))} <span class="num" style="color:var(--muted)">${p.items[id].w}× fout</span></span>`).join("")}</div>`:`<p class="note" style="margin:0">Nog niets fout. Of nog niets geoefend.</p>`}</div>
-    <div class="box"><h3>Extra oefenen</h3><p style="margin:0">${p.free.count} keer, samen ${mins(p.free.sec)} minuten. Telt niet mee voor de route.</p></div>
+    <div class="box"><h3>Extra oefenen</h3><p style="margin:0">${p.free.count ? `${p.free.count} keer, samen ${Math.max(1,Math.round(p.free.sec/60))} min.` : "Nog niet gedaan."} Telt niet mee voor de route.</p></div>
     <div class="box"><h3>Instellingen</h3>
       <label class="row"><input type="checkbox" id="ua" ${p.unlockAll?"checked":""}> Alle sessies openzetten (om alvast te bekijken)</label>
       <div class="row"><button class="btn ghost small" id="reset">Voortgang van ${esc(p.name)} wissen</button></div></div>
